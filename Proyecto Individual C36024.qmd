@@ -1,0 +1,265 @@
+---
+title: "Proyecto Individual CA0204 - Herramientas De Ciencias De Datos I"
+subtitle: "Mapa de accidentes de transito por canton en Costa Rica 2018-2023"
+author: "Randal Picado Bermúdez C36024 "
+format: html
+editor: visual
+date: "Noviembre 2025"
+toc: true
+theme: cosmo
+self-contained: true
+fontsize: 12pt
+mainfont: Times New Roman
+---
+
+## Cargar librerias
+
+```{r}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(geodata)
+library(leaflet)
+library(sf)
+library(htmlwidgets)
+```
+
+## Cargar bases de datos
+
+```{r}
+
+#Se cargan las bases de datos extraidas de COSEVI.
+
+accidentes.personas <- read_delim("3 Base de personas  en accidentes 2017_ 2023_UTF8.csv", 
+    delim = ";", escape_double = FALSE, trim_ws = TRUE)
+
+accidentes <- read_delim("2 Base de accidentes con victimas 2018_ 2024_UTF8.csv", 
+    delim = ";", escape_double = FALSE, trim_ws = TRUE)
+
+#Se filtran ambas bases en años que coincidan, en los periodos del 2018-2023
+
+accidentes.personas.2018.2023 <- accidentes.personas %>% 
+  filter(Año >=2018 & Año <= 2023)
+
+accidentes.2018.2023 <- accidentes %>% 
+  filter(Año >=2018 & Año <= 2023 )
+
+```
+
+## Manipulacion de las bases
+
+```{r}
+
+personas.moto <- accidentes.personas.2018.2023 %>% 
+  filter( `Vehiculo en  el que viajaba` == "Motocicleta") %>% 
+  mutate(
+    Edad = as.numeric(Edad)
+  )
+
+#Ver datos por canton
+
+datos.canton <- personas.moto %>% 
+  group_by(Provincia, Cantón) %>% 
+  summarise(
+    Total.motociclistas = n(),
+    Total.ilesos = sum(`Tipo de lesión` == "Ileso"),
+    Total.leves = sum(`Tipo de lesión` == "Herido leve"),
+    Total.graves = sum(`Tipo de lesión` == "Herido grave"),
+    Total.fallecidos = sum(`Tipo de lesión` == "Muerte"),
+    Tasa.gravedad = (Total.graves + Total.fallecidos) / Total.motociclistas * 100,
+    
+    Total.hombres = sum(Sexo == "Hombre"),
+    Total.mujeres = sum(Sexo == "Mujer"),
+    Promedio.edad = mean(Edad, na.rm = TRUE),
+    
+    Jovenes.18.25 = sum(Edad >=18 & Edad <=25, na.rm = TRUE),
+    Adulto.mayores = sum(Edad>60, na.rm = TRUE),
+    
+    .groups = "drop"
+  )
+
+#De la base accidentes
+
+accidentes.canton <- accidentes.2018.2023 %>% 
+  filter(`Tipo de accidente` == "Colisión con motocicleta") %>% 
+  group_by(Provincia, Cantón) %>% 
+  summarise(
+    Total.accidentes.moto = n(),
+    Porcentaje.curvas = (sum(`Calzada horizontal` == "Curva", na.rm = TRUE) / Total.accidentes.moto) * 100,
+     Porcentaje.lluvia = (sum(`Estado del tiempo` == "Lluvia", na.rm = TRUE) / Total.accidentes.moto) * 100,
+    .groups = "drop"
+  )
+
+
+#Unir las bases 
+datos.completos.canton <- datos.canton %>% 
+  full_join(accidentes.canton, by = c("Provincia", "Cantón")) %>% 
+  mutate(
+    Cantón = case_when(
+      Cantón == "León Cortés" ~ "León Cortés Castro",
+      Cantón == "Valverde Vega" ~ "Sarchí",
+      TRUE ~ Cantón
+    )
+  )
+
+#Se cambio los nombres de dos cantones para que coincidan con los de cr.cantones.sf
+
+```
+
+## Creacion del mapa
+
+```{r}
+
+#Obtener los limites por cantones (nivel 2)
+cr.cantones <- gadm(country = "CRI", level = 2, path = tempdir())
+#Combertir para mejor manipulación
+cr.cantones.sf <- st_as_sf(cr.cantones)
+
+#Unir con los datos de cada canton 
+datos.canton.geo <- cr.cantones.sf %>% 
+  left_join(datos.completos.canton, by = c("NAME_2" = "Cantón"))
+
+#Crear categorías por cantidad de motociclistas en accidentes
+datos.canton.geo <- datos.canton.geo %>% 
+  mutate(
+    categoria.motociclistas = case_when(
+      Total.motociclistas < 500 ~ "Menos de 500",
+      Total.motociclistas >= 500 & Total.motociclistas < 1000 ~ "500 - 999",
+      Total.motociclistas >= 1000 & Total.motociclistas < 2000 ~ "1,000 - 1,999",
+      Total.motociclistas >= 2000 ~ "2,000 o más"
+    ),
+    categoria.motociclistas = factor(categoria.motociclistas,
+                                    levels = c("2,000 o más", 
+                                               "1,000 - 1,999", 
+                                               "500 - 999", 
+                                               "Menos de 500"))
+  )
+
+#leyenda, con paleta de colores 
+colores.motociclistas <- c(
+  "2,000 o más" = "#993404" ,
+  "1,000 - 1,999" = "#d95f0e" ,
+  "500 - 999" = "#fec44f",
+  "Menos de 500" = "#D1BC1B"
+)
+
+paleta.colores <- colorFactor(colores.motociclistas, domain = datos.canton.geo$categoria.motociclistas)
+
+
+#crear mapa
+
+mapa.cantones <- leaflet(datos.canton.geo) %>% 
+  
+  #Borrar los demas paises
+  
+  addTiles("",
+           attribution = "") %>%
+  
+  #Crear los poligonos por cantones
+  addPolygons(
+    fillColor = ~paleta.colores(categoria.motociclistas),
+    fillOpacity = 0.7,
+    color = "Black",
+    weight = 1,
+    opacity = 0.8,
+    smoothFactor = 1,
+    
+    label = ~NAME_2,
+    
+    labelOptions = labelOptions(),
+    
+    highlightOptions = highlightOptions(
+      weight = 3,
+      color = "Black",
+      fillOpacity = 0.9,
+      bringToFront = TRUE
+    ),
+    #El popup es el cuadrito que se muestra al seleccionar un canton
+    popup = ~paste(
+      #Contenedor principal
+  "<div style = 'max-width: 260px; font-family: Arial;'>",
+  
+  #Encabezado
+  "<h3>", NAME_2, "</h3>",
+  "<p><b>Provincia:</b> ", NAME_1, "</p>",
+  "<hr>",
+  
+  
+  "<h4>Estadisticas Principales:</h4>",
+  "<p><b>• Total Accidentes:</b> ", Total.accidentes.moto, "</p>",
+  "<p><b>• Total motociclistas:</b> ", Total.motociclistas, "</p>",
+  "<p><b>• Tasa gravedad:</b> ", round(Tasa.gravedad,0), "%</p>",
+  "<p><b>• Edad promedio:</b> ", round(Promedio.edad,0), " años</p>",
+   "<hr>",
+  
+  
+  "<h4>Factores de Riesgo:</h4>",
+  "<p><b>• Curvas:</b> ", round(Porcentaje.curvas, 0), "%</p>",
+  "<p><b>• Lluvia:</b> ", round(Porcentaje.lluvia, 0), "%</p>",
+  "<p><b>• Jovenes 18-25 años:</b> ", Jovenes.18.25, "</p>",
+   "<hr>",
+  
+  
+  "<h4>Consecuencias:</h4>",
+  "<p><b>• Fallecidos:</b> ", Total.fallecidos, "</p>",
+  "<p><b>• Heridos graves:</b> ", Total.graves, "</p>",
+   "<p><b>• Heridos leves:</b> ", Total.leves, "</p>",
+   "<p><b>• Ilesos:</b> ", Total.ilesos, "</p>",
+  "</div>"
+    )
+  ) %>% 
+  
+  #La leyenda con los colores
+  addLegend(
+    position = "bottomright",
+    pal = paleta.colores,
+    values = ~categoria.motociclistas,
+    title = "Motociclistas<br>Accidentados",
+    opacity = 0.8
+  ) %>%
+  
+  #El titulo del mapa
+  addControl(
+    html = "<div style='background: white; 
+    padding: 8px; 
+    border: 2px solid #993404; 
+    font-weight: bold; 
+    font-size: 14px; 
+    color: #993404;
+    '>Accidentes de Motociclistas por Cantón</div>",
+    position = "topright"
+  ) %>%
+  #Como se va a ver el mapa y que se devuelva cuando se cierra un popup
+  setView(lng = -84.2, lat = 9.6, zoom = 8) %>%
+  onRender("
+    function(datos, datosmapa) {
+      
+      datos.style.backgroundColor = '#93B4ED';
+      
+      mapa = this;
+      
+      vista = {
+        centro: [9.6, -84.2],
+        zoom: 8
+      };
+      
+      mapa.on('popupclose', function(e) {
+        setTimeout(function() {
+          mapa.setView(vista.centro, vista.zoom);
+        }, 300);
+      });
+    }
+  ")
+
+
+#Guaradar en html
+
+saveWidget(mapa.cantones, "mapa.cantones.html", selfcontained = TRUE)
+browseURL("mapa.cantones.html")
+```
+
+# Informacion adicional
+```{r}
+
+```
+
