@@ -259,7 +259,39 @@ browseURL("mapa.cantones.html")
 ```
 
 # Informacion adicional
+
 ```{r}
+cantones.mas.accidentes <- datos.completos.canton %>% 
+  arrange(desc(Total.accidentes.moto)) %>% 
+  select(Cantón, Total.accidentes.moto) %>% 
+  head(5)
+
+cantones.motocilistas <- datos.completos.canton %>% 
+  arrange(desc(Total.motociclistas)) %>% 
+  select(Cantón, Total.motociclistas) %>% 
+  head(5)
+
+cantones.fallecidos <- datos.completos.canton %>% 
+  arrange(desc(Total.fallecidos)) %>% 
+  select(Cantón, Total.fallecidos) %>% 
+  head(5)
+
+cantones.hombres <- datos.completos.canton %>% 
+  arrange(desc(Total.hombres)) %>% 
+  select(Cantón, Total.hombres) %>% 
+  head(5)
+
+cantones.mujeres <- datos.completos.canton %>% 
+  arrange(desc(Total.mujeres)) %>% 
+  select(Cantón, Total.mujeres) %>% 
+  head(5)
+
+niños.accidentes <- personas.moto %>% 
+  filter(Edad <= 4)
+nrow(niños.accidentes)
+
 
 ```
+
+
 
