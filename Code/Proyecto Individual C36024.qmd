@@ -1,6 +1,6 @@
 ---
 title: "Proyecto Individual CA0204 - Herramientas De Ciencias De Datos I"
-subtitle: "Mapa de accidentes de transito por canton en Costa Rica 2018-2023"
+subtitle: "Distribución Cantonal de los Accidentes de Tránsito con Motocicletas en Costa Rica 2018-2023"
 author: "Randal Picado Bermúdez C36024 "
 format: html
 editor: visual
@@ -22,6 +22,7 @@ library(geodata)
 library(leaflet)
 library(sf)
 library(htmlwidgets)
+library(tidyr)
 ```
 
 ## Cargar bases de datos
@@ -30,10 +31,10 @@ library(htmlwidgets)
 
 #Se cargan las bases de datos extraidas de COSEVI.
 
-accidentes.personas <- read_delim("3 Base de personas  en accidentes 2017_ 2023_UTF8.csv", 
+accidentes.personas <- read_delim("../Data/3 Base de personas  en accidentes 2017_ 2023_UTF8.csv", 
     delim = ";", escape_double = FALSE, trim_ws = TRUE)
 
-accidentes <- read_delim("2 Base de accidentes con victimas 2018_ 2024_UTF8.csv", 
+accidentes <- read_delim("../Data/2 Base de accidentes con victimas 2018_ 2024_UTF8.csv", 
     delim = ";", escape_double = FALSE, trim_ws = TRUE)
 
 #Se filtran ambas bases en años que coincidan, en los periodos del 2018-2023
@@ -261,34 +262,70 @@ browseURL("mapa.cantones.html")
 # Informacion adicional
 
 ```{r}
-cantones.mas.accidentes <- datos.completos.canton %>% 
-  arrange(desc(Total.accidentes.moto)) %>% 
-  select(Cantón, Total.accidentes.moto) %>% 
-  head(5)
 
-cantones.motocilistas <- datos.completos.canton %>% 
-  arrange(desc(Total.motociclistas)) %>% 
-  select(Cantón, Total.motociclistas) %>% 
-  head(5)
-
-cantones.fallecidos <- datos.completos.canton %>% 
-  arrange(desc(Total.fallecidos)) %>% 
-  select(Cantón, Total.fallecidos) %>% 
-  head(5)
-
-cantones.hombres <- datos.completos.canton %>% 
-  arrange(desc(Total.hombres)) %>% 
-  select(Cantón, Total.hombres) %>% 
-  head(5)
-
-cantones.mujeres <- datos.completos.canton %>% 
-  arrange(desc(Total.mujeres)) %>% 
-  select(Cantón, Total.mujeres) %>% 
-  head(5)
+total.ac <- nrow(accidentes.2018.2023)
+total.ac.moto <- sum(accidentes.canton$Total.accidentes.moto)
+porcentaje.moto <- total.ac.moto/total.ac*100
 
 niños.accidentes <- personas.moto %>% 
   filter(Edad <= 4)
 nrow(niños.accidentes)
+
+datos.completos.canton %>%
+  arrange(desc(Total.accidentes.moto)) %>%
+  head(7) %>%
+  ggplot(aes(x = reorder(Cantón, Total.accidentes.moto), y = Total.accidentes.moto)) +
+  geom_col(fill = "#3D65F5") +
+  scale_y_continuous(breaks = seq(0, 4500, by = 500)) +
+  labs(title = "Cantones con más accidentes de moto",
+       x = "Cantón", y = "Total accidentes") +
+  theme_minimal()
+
+datos.completos.canton %>%
+  arrange(desc(Tasa.gravedad)) %>%
+  head(7) %>%
+  ggplot(aes(x = reorder(Cantón, Tasa.gravedad), y = Tasa.gravedad)) +
+  geom_col(fill = "#3D65F5") +
+  scale_y_continuous(breaks = seq(0, 100, by = 5)) +
+  labs(title = "Cantones con mayor tasa de gravedad",
+       x = "Cantón", y = "Tasa de gravedad en porcentaje") +
+  theme_minimal()
+
+datos.completos.canton %>%
+  arrange(desc(Total.fallecidos)) %>%
+  head(7) %>%
+  ggplot(aes(x = reorder(Cantón, Total.fallecidos), y = Total.fallecidos)) +
+  geom_col(fill = "darkblue") +
+  scale_y_continuous(breaks = seq(0, 80, by = 10)) +
+  labs(title = "Cantones con más fallecidos en moto",
+       x = "Cantón", y = "Total fallecidos") +
+  theme_minimal()
+
+datos.top7 <- datos.completos.canton %>% 
+  arrange(desc(Total.motociclistas)) %>% 
+  head(7)
+
+datos.top7 %>%
+  pivot_longer (cols = c(Total.hombres, Total.mujeres), 
+               names_to = "Género", values_to = "Cantidad") %>%
+  ggplot(aes(x = reorder(Cantón, Total.motociclistas), y = Cantidad, fill = Género)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_manual(values = c("Total.hombres" = "steelblue", "Total.mujeres" = "lightblue")) +
+  scale_y_continuous(breaks = seq(0, 5000, by = 500)) +
+  labs(title = "Comparación hombres vs mujeres motociclistas",
+       x = "Cantón", y = "Cantidad") +
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+datos.completos.canton %>%
+  arrange(desc(Jovenes.18.25)) %>%
+  head(7) %>%
+  ggplot(aes(x = reorder(Cantón, Jovenes.18.25), y = Jovenes.18.25)) +
+  geom_col(fill = "#3D65F5") +
+  scale_y_continuous(breaks = seq(0, 2000, by = 200)) +
+  labs(title = "Cantones con más jóvenes (18-25 años) en accidentes",
+       x = "Cantón", y = "Cantidad de jóvenes") +
+  theme_minimal()
 
 
 ```
