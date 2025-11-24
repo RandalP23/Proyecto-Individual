@@ -292,6 +292,3 @@ nrow(niños.accidentes)
 
 
 ```
-
-
-
