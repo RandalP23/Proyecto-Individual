@@ -15,14 +15,11 @@ mainfont: Times New Roman
 ## Cargar librerias
 
 ```{r}
-library(readr)
-library(dplyr)
-library(ggplot2)
 library(geodata)
 library(leaflet)
 library(sf)
 library(htmlwidgets)
-library(tidyr)
+library(tidyverse)
 ```
 
 ## Cargar bases de datos
@@ -255,7 +252,9 @@ mapa.cantones <- leaflet(datos.canton.geo) %>%
 
 #Guaradar en html
 
-saveWidget(mapa.cantones, "mapa.cantones.html", selfcontained = TRUE)
+saveWidget(mapa.cantones, "mapa.cantones.html", 
+           selfcontained = TRUE,
+           libdir = NULL) 
 browseURL("mapa.cantones.html")
 ```
 
@@ -264,14 +263,21 @@ browseURL("mapa.cantones.html")
 ```{r}
 
 total.ac <- nrow(accidentes.2018.2023)
+
 total.ac.moto <- sum(accidentes.canton$Total.accidentes.moto)
+
 porcentaje.moto <- total.ac.moto/total.ac*100
+
+
+
 
 niños.accidentes <- personas.moto %>% 
   filter(Edad <= 4)
 nrow(niños.accidentes)
 
-datos.completos.canton %>%
+
+
+grafica.accidentes <- datos.completos.canton %>%
   arrange(desc(Total.accidentes.moto)) %>%
   head(7) %>%
   ggplot(aes(x = reorder(Cantón, Total.accidentes.moto), y = Total.accidentes.moto)) +
@@ -281,9 +287,11 @@ datos.completos.canton %>%
        x = "Cantón", y = "Total accidentes") +
   theme_minimal()
 
-datos.completos.canton %>%
+ggsave("../Res/cantones_accidentes.pdf", plot = grafica.accidentes, width = 6, height = 4 )
+
+grafica.gravedad <- datos.completos.canton %>%
   arrange(desc(Tasa.gravedad)) %>%
-  head(7) %>%
+  head(7) %>%q
   ggplot(aes(x = reorder(Cantón, Tasa.gravedad), y = Tasa.gravedad)) +
   geom_col(fill = "#3D65F5") +
   scale_y_continuous(breaks = seq(0, 100, by = 5)) +
@@ -291,7 +299,9 @@ datos.completos.canton %>%
        x = "Cantón", y = "Tasa de gravedad en porcentaje") +
   theme_minimal()
 
-datos.completos.canton %>%
+ggsave("../Res/cantones_gravedad.pdf", plot = grafica.gravedad, width = 6, height = 4 )
+
+grafica.fallecidos <- datos.completos.canton %>%
   arrange(desc(Total.fallecidos)) %>%
   head(7) %>%
   ggplot(aes(x = reorder(Cantón, Total.fallecidos), y = Total.fallecidos)) +
@@ -301,11 +311,13 @@ datos.completos.canton %>%
        x = "Cantón", y = "Total fallecidos") +
   theme_minimal()
 
+ggsave("../Res/fallecios_canton.pdf", plot = grafica.fallecidos, width = 6, height = 4 )
+
 datos.top7 <- datos.completos.canton %>% 
   arrange(desc(Total.motociclistas)) %>% 
   head(7)
 
-datos.top7 %>%
+graficas.genero <- datos.top7 %>%
   pivot_longer (cols = c(Total.hombres, Total.mujeres), 
                names_to = "Género", values_to = "Cantidad") %>%
   ggplot(aes(x = reorder(Cantón, Total.motociclistas), y = Cantidad, fill = Género)) +
@@ -314,18 +326,40 @@ datos.top7 %>%
   scale_y_continuous(breaks = seq(0, 5000, by = 500)) +
   labs(title = "Comparación hombres vs mujeres motociclistas",
        x = "Cantón", y = "Cantidad") +
-  theme_minimal()+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-datos.completos.canton %>%
-  arrange(desc(Jovenes.18.25)) %>%
-  head(7) %>%
-  ggplot(aes(x = reorder(Cantón, Jovenes.18.25), y = Jovenes.18.25)) +
-  geom_col(fill = "#3D65F5") +
-  scale_y_continuous(breaks = seq(0, 2000, by = 200)) +
-  labs(title = "Cantones con más jóvenes (18-25 años) en accidentes",
-       x = "Cantón", y = "Cantidad de jóvenes") +
   theme_minimal()
 
+ggsave("../Res/accidentatos_genero.pdf", plot = graficas.genero, width = 6, height = 4 )
 
+grafica.jovenes <- datos.completos.canton %>%
+  arrange(desc(Jovenes.18.25)) %>%
+  head(7) %>%
+  mutate(Porcentaje_jovenes = (Jovenes.18.25 / Total.motociclistas) * 100) %>%
+  ggplot(aes(x = reorder(Cantón, Porcentaje_jovenes), y = Porcentaje_jovenes)) +
+  geom_col(fill = "#3D65F5") +
+  scale_y_continuous(breaks = seq(0, 100, by = 10),
+                     labels = scales::percent_format(scale = 1)) +
+  labs(title = "Cantones con mayor porcentaje de jóvenes (18-25 años) en accidentes",
+       x = "Cantón", y = "Porcentaje de jóvenes") +
+  theme_minimal() +
+  geom_text(aes(label = paste0(round(Porcentaje_jovenes, 1), "%")), 
+            vjust = -0.5, size = 3)
+
+ggsave("../Res/jovenes_accidentados.pdf", plot = grafica.jovenes, width = 6, height = 4)
+
+# Cálculo porcentaje H y M
+porcentajes <- datos.completos.canton %>%
+  summarise(
+    Hombres = sum(Total.hombres, na.rm = TRUE),
+    Mujeres = sum(Total.mujeres, na.rm = TRUE)
+  ) %>%
+  mutate(
+    Total = Hombres + Mujeres,
+    Porcentaje_Hombres = (Hombres / Total) * 100,
+    Porcentaje_Mujeres = (Mujeres / Total) * 100
+  )
+
+# Ver resultados
+porcentajes
+
+datos.completos.canton
 ```
