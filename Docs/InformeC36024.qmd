@@ -1,0 +1,142 @@
+---
+title: ""
+format:
+  pdf:
+    engine: xelatex
+    documentclass: article
+    fontsize: 12pt
+header-includes:
+  - \usepackage{setspace}
+  - \usepackage{titling}
+  - \usepackage{indentfirst}
+  - \setlength{\parindent}{15pt}
+  - \usepackage{graphicx}
+---
+
+\begin{center}
+{\LARGE \bfseries Distribución Geográfica de Accidentes de
+Motocicletas en Costa Rica: Análisis Cantonal
+2018-2023 \par}
+
+\vspace{0.5cm}
+
+
+{\large
+Randal Picado Bermudez C36024\\
+
+\par}
+
+\vspace{0.5cm}
+
+\textit{
+Ciencias Actuariales, Escuela de Matemática, Universidad de Costa Rica.\\
+San José, Costa Rica. Noviembre, 2025
+}
+
+
+\end{center}
+
+\vspace{0.5cm}
+\hrule
+\vspace{0.3cm}
+
+\section {Introducción}
+\indent Este estudio surge a partir del crecimiento acelerado del número de motociclistas en Costa Rica, lo cual representa un gran cambio en la movilidad nacional en los últimos años. Según un estudio de la Universidad de Costa Rica (2017), el país contaba con aproximadamente 590,000 motocicletas en circulación. Sin embargo, proyecciones más recientes indican un crecimiento exponencial, estimándose para 2025 alrededor de 860,000 unidades (Montiel, 2024), lo que representa un incremento de aproximadamente 45% en un periodo de 8 años.
+
+Este aumento acelerado de la población motociclista ha generado un impacto directo en los accidentes de tránsito, observándose un aumento proporcional en la participación de las motocicletas en el total de accidentes de tránsito reportados entre 2018 y 2023. Los usuarios de motocicletas constituyen uno de los grupos más vulnerables en la vía pública, enfrentando mayores riesgos de lesiones graves y mortalidad en comparación con otros modos de transporte.
+
+Adicionalmente, también es importante recalcar la falta de educación vial presente en el país y el incumplimiento de las leyes vigentes. Se estima que en 2017, de los 590,000 motociclistas, más de 300,000 (más del 50%) circulaban sin cumplir leyes de tránsito como portar una licencia.
+
+En el presente estudio se caracterizará la distribución geográfica de dichos accidentes de motocicleta a nivel cantonal durante el período 2018-2023, con el objetivo de identificar algunos patrones o factores de riesgo importantes como lo pueden ser el clima, la condición de la vía, la edad de los conductores u otros, así como la severidad de los accidentes clasificando entre tipos de lesiones y fallecidos.
+
+\section {Metodología}
+\indent Para la elaboración de este estudio se trabajó con dos bases de datos oficiales del Consejo de Seguridad Vial (COSEVI): "Base de personas en accidentes 2017-2023" y "Base de accidentes con víctimas 2018-2024". La primera base contiene información sobre las personas involucradas en accidentes de tránsito, incluyendo variables como el vehículo en el que viajaban, su rol, edad, sexo, cantón del accidente, entre otros. La segunda base proporciona detalles sobre los accidentes ocurridos, incluyendo ubicación cantonal, tipo de calzada (recta o curva), condiciones climáticas y otras características del accidente.
+
+Inicialmente, se filtraron ambas bases de datos para el período de coincidencia 2018-2023, seleccionando unicamente los accidentes donde el vehículo involucrado fue una motocicleta. Luego, los datos se agruparon por cantón, creando variables que incluyen: totales de heridos leves, graves, fallecidos e ilesos; promedios de edad; distribución por sexo; y tasas de gravedad calculadas como el porcentaje de lesionados graves y fallecidos sobre el total de motociclistas accidentados.
+
+Se tomaron tres factores de riesgo principales el analisis, los cuales fueron; condiciones climáticas (días lluviosos), tipo de calzada (curvas) y grupos etarios (especialmente jóvenes entre 18 y 25 años). Estos factores fueron seleccionados por su representatividad y relevancia para los objetivos del estudio. Todo el procesamiento de datos se realizó utilizando la librería `tidyverse` en R-Studio.
+
+Para la visualización de resultados, se desarrolló un mapa interactivo cantonal utilizando la librería `leaflet`. La delimitación geográfica se obtuvo mediante la función `gadm` del paquete `geodata`, esta permite obtener las coordenas de un país por niveles de separación, en nuestro caso proporciona las coordenadas de Costa Rica a nivel cantonal (nivel 2). Sin embargo, los datos espaciales obtenidos con `geodata` requieren ser transformados a un formato compatible con `leaflet` para su visualización. Para esto, se utilizó la función `st_as_sf` del paquete `sf` (Simple Features), que convierte los datos espaciales en un formato estandarizado que permite realizar operaciones geométricas y espaciales.
+
+La relación entre estas 3 librerias es muy importante para poder realizar el mapa, `geodata` proporciona la base cartográfica, `sf` transforma y prepara los datos espaciales, y `leaflet` genera la visualización interactiva final. Esta conversión a formato `sf` es importante porque permite unir los datos geográficos con la base de accidentes mediante operaciones de unión espacial, de este modo aseguramos que cada cantón en el mapa contenga la información correspondiente de siniestralidad.
+
+El mapa categoriza los cantones según la cantidad de motociclistas accidentados, asignando colores diferenciados para que sea mas facíl interpretarlo. La función `addPolygons` de `leaflet` permitió crear las divisiones cantonales con interactividad, incluyendo resaltado al seleccionar y popups informativos. Estos últimos, programados en HTML, presentan la informacion que se quiere mostrar de cada canton como: provincia a la que pertenece, total de accidentados, tasa de gravedad, promedio de edad, factores de riesgo (porcentaje de accidentes en lluvia, curvas y jóvenes) y consecuencias (distribución de lesiones y fallecimientos).
+
+Adicionalmente, se generaron graficas comparativas utilizando `ggplot2` en las que se muestra: cantones con mayor frecuencia de accidentes, mayores tasas de gravedad, distribución por sexo en los cantones con mayor cantidad de accidentados, y porcentaje de jóvenes involucrados. El mapa final se exportó en formato HTML usando la librería `htmlwidgets` para garantizar su interactividad y accesibilidad.
+\section {Resultados}
+Se logra la construccion del mapa interactivo para el análisis de los accidentes de motocicleta a nivel cantonal para el período 2018-2023.
+
+![Mapa](../res/Mapa.png){width=70%}
+
+*Mapa interactivo que muestra la distribución geográfica de accidentes de motocicleta a nivel cantonal. Los colores representan la cantidad de motociclistas accidentados, desde amarillo (menos de 500) hasta rojo oscuro (más de 2,000).*
+
+![Popup](../res/Popup.png){width=70%}
+
+*Ejemplo del popup informativo que muestra datos específicos por cantón, incluyendo tasas de gravedad, factores de riesgo y distribución de consecuencias.*
+
+\newpage
+
+Se muestran algunas graficas resultados (el resto en Anexo1).
+
+![Cantones con mas accidentes](../res/cantones_accidentes.png){width=70%}
+
+![Cantones con mas fallecidos](../res/fallecidos_canton.png){width=70%}
+
+\newpage
+
+\section{Conclusiones}
+En conclusión, los accidentes de tránsito donde hay motociclistas involucrados son muy frecuentes en el país en el período de estudio (2018-2023), ya que representan un 40% del total de los accidentes de tránsito, con una cifra aproximada de 35,000. 
+Además, los cantones con mayor cantidad de accidentes registrados son los que pertenecen a la GAM, lo cual tiene sentido pues en estos la población es mayor en comparación con los de las zonas rurales y se tiene una mayor concentración vehicular. 
+Por otro lado, se observa que la edad promedio de personas accidentadas ronda entre los 33 y 35 años en la mayoría de cantones, siendo el factor de riesgo más presente el de ser joven (18-25 años). Cabe destacar que los cantones de las zonas rurales son los que presentan mayor tasa de gravedad.En cuanto al género, el masculino es el que más involucrado se ve en estos accidentes, pero de igual manera es el género que más utiliza este vehículo, por lo cual existe una relación directa.
+
+\section{Recomendaciones}
+Con base en los resultados del estudio, se proponen las siguientes recomendaciones:
+
+**Para la población motociclista:**
+Cumplir las medidas de protección personal, incluyendo el uso obligatorio de casco y equipo de protección, respetar la capacidad máxima de ocupantes establecida por ley (máximo dos personas por motocicleta), cumplir con el requisito de edad mínima para acompañantes (5 años cumplidos), realizar y aprobar los exámenes para tener licencia de conducir, adaptar la velocidad a las condiciones de la vía, especialmente en lugares con curvas y durante dias de lluvia y eliminar por completo las maniobras temerarias (como el "wheelie") que incrementan significativamente el riesgo de accidentes graves.
+
+**Para las autoridades competentes:**
+Implementar campañas educativas continuas sobre seguridad vial específicas para motociclistas, aumentar el control y vigilancia del cumplimiento de las normativas de tránsito, con especial énfasis en que se porte la licencia de conducir, respetar las señales de transito y la velocidad limite.
+
+\newpage
+
+\section{Referencias}
+
+\hangindent=1.27cm \hangafter=1
+Anartz Mugika Ledo - Desarrollo & Formación. (2021, November 3). Leaflet - Popup - Implementando información en popup de marcadores [Video]. YouTube. https://www.youtube.com/watch?v=a05ZB9kjKfk
+
+\hangindent=1.27cm \hangafter=1
+Carmona Rizo, T. (2017, 8 de febrero). Más de 300 mil motociclistas en nuestro país no tienen licencia de conducir. Universidad de Costa Rica. https://www.ucr.ac.cr/noticias/2017/02/08/mas-de-300-mil-motociclistas-en-nuestro-pais-no-tengan-licencia-de-conducir.html
+
+\hangindent=1.27cm \hangafter=1
+Coder, R. (2024, January 4). Mapas interactivos con leaflet en R. R CHARTS | Una Colección De Gráficos Hechos Con El Lenguaje De Programación R. https://r-charts.com/es/espacial/mapas-interactivos-leaflet/#popup
+
+\hangindent=1.27cm \hangafter=1
+Consolidado de accidentes de tránsito con víctimas · COSEVI. (s.f.). COSEVI. https://datosabiertos.csv.go.cr/datasets/193472/consolidado-de-accidentes-de-transito-con-victimas/
+
+\hangindent=1.27cm \hangafter=1
+Consolidado de personas involucradas en accidentes con víctimas · COSEVI. (n.d.). COSEVI. https://datosabiertos.csv.go.cr/datasets/193470/consolidado-de-personas-involucradas-en-accidentes-con-victimas/
+
+\hangindent=1.27cm \hangafter=1
+Holtz, Y. (n.d.). Interactive Maps with
+leaflet in R. https://r-graph-gallery.com/package/leaflet.html
+
+\hangindent=1.27cm \hangafter=1
+Montiel, A. (2025, 25 de agosto). De motos y pólizas. delfino.cr. https://delfino.cr/2025/08/de-motos-y-polizas
+
+\hangindent=1.27cm \hangafter=1
+Privilegie la seguridad de sus hijos en los vehículos, a propósito del inicio del curso lecto. MOPT (s.f.) https://www.mopt.go.cr/noticias/2025/privilegie-la-seguridad-de-sus-hijos-en-los-vehiculos-proposito-del-inicio-del-curso
+
+
+\newpage
+
+\section{Anexo1}
+
+![Cantones con mayor tasa de gravedad](../Res/cantones_gravedad.png){width=70%}
+
+![Cantones con más fallecidos en moto](../Res/fallecidos_canton.png){width=70%}
+
+![Comparación hombres vs mujeres motociclistas](../Res/accidentados_genero.png){width=70%}
+
+![Cantones con mayor porcentaje de jóvenes en accidentes](../Res/jovenes_accidentados.png){width=70%}
+
