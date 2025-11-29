@@ -269,13 +269,12 @@ total.ac.moto <- sum(accidentes.canton$Total.accidentes.moto)
 porcentaje.moto <- total.ac.moto/total.ac*100
 
 
-
-
 niños.accidentes <- personas.moto %>% 
   filter(Edad <= 4)
 nrow(niños.accidentes)
 
 
+#Creacion de graficas
 
 grafica.accidentes <- datos.completos.canton %>%
   arrange(desc(Total.accidentes.moto)) %>%
@@ -287,11 +286,12 @@ grafica.accidentes <- datos.completos.canton %>%
        x = "Cantón", y = "Total accidentes") +
   theme_minimal()
 
+#Guardar graficas
 ggsave("../Res/cantones_accidentes.pdf", plot = grafica.accidentes, width = 6, height = 4 )
 
 grafica.gravedad <- datos.completos.canton %>%
   arrange(desc(Tasa.gravedad)) %>%
-  head(7) %>%q
+  head(7) %>%
   ggplot(aes(x = reorder(Cantón, Tasa.gravedad), y = Tasa.gravedad)) +
   geom_col(fill = "#3D65F5") +
   scale_y_continuous(breaks = seq(0, 100, by = 5)) +
@@ -362,4 +362,10 @@ porcentajes <- datos.completos.canton %>%
 porcentajes
 
 datos.completos.canton
+
+ggsave("../Res/cantones_accidentes.png", plot = grafica.accidentes, width = 6, height = 4)
+ggsave("../Res/cantones_gravedad.png", plot = grafica.gravedad, width = 6, height = 4)
+ggsave("../Res/fallecidos_canton.png", plot = grafica.fallecidos, width = 6, height = 4)
+ggsave("../Res/accidentados_genero.png", plot = graficas.genero, width = 6, height = 4)
+ggsave("../Res/jovenes_accidentados.png", plot = grafica.jovenes, width = 6, height = 4)
 ```
