@@ -338,7 +338,7 @@ grafica.jovenes <- datos.completos.canton %>%
   geom_col(fill = "#3D65F5") +
   scale_y_continuous(breaks = seq(0, 100, by = 10),
                      labels = scales::percent_format(scale = 1)) +
-  labs(title = "Cantones con mayor porcentaje de jóvenes (18-25 años) en accidentes",
+  labs(title = "Cantones con mayor porcentaje de jóvenes accidentados",
        x = "Cantón", y = "Porcentaje de jóvenes") +
   theme_minimal() +
   geom_text(aes(label = paste0(round(Porcentaje_jovenes, 1), "%")), 
@@ -362,6 +362,8 @@ porcentajes <- datos.completos.canton %>%
 porcentajes
 
 datos.completos.canton
+
+#Guardar como imagenes
 
 ggsave("../Res/cantones_accidentes.png", plot = grafica.accidentes, width = 6, height = 4)
 ggsave("../Res/cantones_gravedad.png", plot = grafica.gravedad, width = 6, height = 4)
